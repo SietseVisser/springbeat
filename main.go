@@ -3,13 +3,16 @@ package main
 import (
 	"os"
 
-	"github.com/SietseVisser/springbeat/cmd"
+//	"github.com/elastic/beats/libbeat/beat"
+	"github.com/elastic/beats/libbeat/cmd"
 
-	_ "github.com/SietseVisser/springbeat/include"
+	"github.com/SietseVisser/springbeat/beater"
 )
 
+var RootCmd = cmd.GenRootCmd("springbeat", "", beater.New)
+
 func main() {
-	if err := cmd.RootCmd.Execute(); err != nil {
+	if err := RootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }

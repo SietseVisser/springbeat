@@ -54,8 +54,8 @@ func (bt *Springbeat) Run(b *beat.Beat) error {
 		event := beat.Event{
 			Timestamp: time.Now(),
 			Fields: common.MapStr{
-				"type":    b.Info.Name,
-				"counter": counter,
+			"type":    b.Info.Name,
+			"counter": counter,
 			},
 		}
 		bt.client.Publish(event)
