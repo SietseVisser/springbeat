@@ -8,7 +8,9 @@ import (
 	"github.com/elastic/beats/libbeat/common"
 	"github.com/elastic/beats/libbeat/logp"
 
+	"errors"
 	"github.com/SietseVisser/springbeat/config"
+	"net/url"
 )
 
 // Springbeat configuration.
@@ -16,6 +18,11 @@ type Springbeat struct {
 	done   chan struct{}
 	config config.Config
 	client beat.Client
+
+	urls []*url.URL
+
+	metricsStats bool
+	healthStats  bool
 }
 
 // New creates an instance of springbeat.
@@ -29,6 +36,47 @@ func New(b *beat.Beat, cfg *common.Config) (beat.Beater, error) {
 		done:   make(chan struct{}),
 		config: c,
 	}
+
+	//define default URL if none provided
+	var urlConfig []string
+	if config.URLs != nil {
+		urlConfig = config.URLs
+	} else {
+		urlConfig = []string{"http://127.0.0.1"}
+	}
+
+	bt.urls = make([]*url.URL, len(urlConfig))
+	for i := 0; i < len(urlConfig); i++ {
+		u, err := url.Parse(urlConfig[i])
+		if err != nil {
+			logp.Err("Invalid Spring Boot URL: %v", err)
+			return nil, err
+		}
+		bt.urls[i] = u
+	}
+
+	if config.Stats.Metrics != nil {
+		bt.metricsStats = *config.Stats.Metrics
+	} else {
+		bt.metricsStats = true
+	}
+
+	if config.Stats.Health != nil {
+		bt.healthStats = *config.Stats.Health
+	} else {
+		bt.healthStats = true
+	}
+
+	if !bt.metricsStats && !bt.metricsStats {
+		return nil, errors.New("Invalid statistics configuration")
+	}
+
+	logp.Debug("springbeat", "Init springbeat")
+	logp.Debug("springbeat", "Period %v\n", bt.config.Period)
+	logp.Debug("springbeat", "Watch %v", bt.urls)
+	logp.Debug("springbeat", "Metrics statistics %t\n", bt.metricsStats)
+	logp.Debug("springbeat", "Health statistics %t\n", bt.healthStats)
+
 	return bt, nil
 }
 
@@ -54,8 +102,8 @@ func (bt *Springbeat) Run(b *beat.Beat) error {
 		event := beat.Event{
 			Timestamp: time.Now(),
 			Fields: common.MapStr{
-			"type":    b.Info.Name,
-			"counter": counter,
+				"type":    b.Info.Name,
+				"counter": counter,
 			},
 		}
 		bt.client.Publish(event)

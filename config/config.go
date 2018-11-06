@@ -7,6 +7,13 @@ import "time"
 
 type Config struct {
 	Period time.Duration `config:"period"`
+
+	URLs []string
+
+	Stats struct {
+		Metrics *bool
+		Health  *bool
+	}
 }
 
 var DefaultConfig = Config{
